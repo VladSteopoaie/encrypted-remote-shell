@@ -4,6 +4,8 @@ from lib.Logger import logger as log
 from Crypto.PublicKey import RSA as pycryptoRSA
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Random import random as pycryptoRandom
+from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA256
 
 #######################
 ### Code form class ###
@@ -89,7 +91,7 @@ def generate_large_prime(key_size=1024):
 ################
 ### New code ###
 ################
-
+    
 class RSA:
     def __init__(self):
         self.p = 0
@@ -98,6 +100,8 @@ class RSA:
         self.d = 0
         self.N = 0
         self.key_size = 0
+        self.signer = None
+        self.verifier = None
 
     # code from class
     def generate(self, key_size : int):
@@ -120,14 +124,17 @@ class RSA:
         
         self.d = pow(self.e, -1, phi)
 
+        self.signer = pkcs1_15.new(pycryptoRSA.construct((self.N, self.e, self.d)))
+        self.verifier = pkcs1_15.new(pycryptoRSA.construct((self.N, self.e)))
+
         publicKey = (self.N, self.e)
         privateKey = (self.N, self.d)
-
         return (publicKey, privateKey)
     
     def import_pub_key(self, pub_key : tuple):
         self.N, self.e = pub_key
         self.key_size = self.N.bit_length()
+        self.verifier = pkcs1_15.new(pycryptoRSA.construct(pub_key))
     
     # this is not a secure encryption since I do not use any padding
     def encrypt(self, message : bytes) -> bytes:
@@ -155,6 +162,25 @@ class RSA:
         return message_int.to_bytes(length=self.key_size, byteorder='big')
         # return message_int.to_bytes(length=byte_length, byteorder='big')
 
+    def sign(self, message : bytes) -> bytes:
+        if self.signer is None:
+            raise ValueError("[RSA] Private key not set!")
+        
+        hash_msg = SHA256.new(message)
+        signature = self.signer.sign(hash_msg)
+        return signature
+    
+    def verify(self, message : bytes, signature : bytes) -> bool:
+        if self.verifier is None:
+            raise ValueError("[RSA] Public key not set!")
+        
+        hash_msg = SHA256.new(message)
+        try:
+            self.verifier.verify(hash_msg, signature)
+            return True
+        except (ValueError, TypeError):
+            return False
+
 class libRSA:
     def __init__(self):
         self.rsa = None
@@ -165,11 +191,14 @@ class libRSA:
         self.d = 0
         self.N = 0
         self.key_size = 0
+        self.signer = None
+        self.verifier = None
 
     def init_values(self, public_key=False):
         self.e = self.rsa.e
         self.N = self.rsa.n
-        
+        self.verifier = pkcs1_15.new(pycryptoRSA.construct((self.N, self.e)))
+
         if public_key:
             self.cipher = PKCS1_OAEP.new(self.rsa.publickey())
             return
@@ -177,6 +206,7 @@ class libRSA:
         self.p = self.rsa.p
         self.q = self.rsa.q
         self.d = self.rsa.d
+        self.signer = pkcs1_15.new(pycryptoRSA.construct((self.N, self.e, self.d)))
         self.cipher = PKCS1_OAEP.new(self.rsa)
         self.key_size = self.rsa.size_in_bits()
 
@@ -200,6 +230,25 @@ class libRSA:
         if self.rsa is None:
             raise ValueError("[libRSA] Private key not set!")
         return self.cipher.decrypt(ciphertext)
+
+    def sign(self, message : bytes) -> bytes:
+        if self.signer is None:
+            raise ValueError("[RSA] Private key not set!")
+        
+        hash_msg = SHA256.new(message)
+        signature = self.signer.sign(hash_msg)
+        return signature
+    
+    def verify(self, message : bytes, signature : bytes) -> bool:
+        if self.verifier is None:
+            raise ValueError("[RSA] Public key not set!")
+        
+        hash_msg = SHA256.new(message)
+        try:
+            self.verifier.verify(hash_msg, signature)
+            return True
+        except (ValueError, TypeError):
+            return False
     
 
 class DHKE:

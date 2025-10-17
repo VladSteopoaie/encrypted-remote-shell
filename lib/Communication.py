@@ -2,7 +2,17 @@ import socket
 import threading
 from types import MethodType
 from lib.Logger import logger as log
+from enum import IntEnum, auto
 
+class Command(IntEnum):
+    EXIT = 0
+    LIB = 1
+    RSA_PUB = 2
+    RSA_KE = 3
+    DHKE = 4
+    EXEC = 5
+    FILE = 6
+    ERROR = 7
 class Packet:
     def __init__(self, byte_stream):
         self.size = len(byte_stream)
@@ -103,10 +113,12 @@ class NetClient:
     def send_data(self, command : int, data : bytes):
         self.comm.send_packet(Packet(command.to_bytes(length=2, byteorder='big') + data))
         packet = self.comm.recv_packet()
+        if int.from_bytes(packet.command, byteorder='big') == Command.ERROR:
+            raise ValueError(f"[NetClient] Error from server: {packet.message.decode()}")
         return packet.data()[2:]
 
     def disconnect(self):
         self.running = False
-        self.comm.send_packet(Packet(b'\x00\x00')) # the command to exit is 0
+        self.comm.send_packet(Packet(Command.EXIT.to_bytes(2, 'big'))) # the command to exit is 0
         self.comm.sock.close()
-        print("[NetClient] Disconnected")
+        log.warning("[NetClient] Disconnected")
