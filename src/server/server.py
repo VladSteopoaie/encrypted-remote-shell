@@ -17,7 +17,7 @@ rsa = None
 cipher = None
 
 
-def init(lib : str):
+def init(lib : str, verbose: bool = False):
     """
     Initialization function for the cryptography libraries.
 
@@ -26,17 +26,25 @@ def init(lib : str):
     """
     global rsa, cipher, dhke
     
+    # set logging level
+    if verbose:
+        log.remove()
+        log.add(sys.stdout, colorize=True, format="<level>{level.icon}</level> <level>{message}</level>", level="DEBUG")
+
     # initialize RSA and AES based on the chosen library
     if lib == 'pycryptodome':
         rsa = libRSA()
         cipher = libAES()
+        log.info("Using PyCryptodome library for cryptography.")
     elif lib == 'custom':
         rsa = RSA()
         cipher = AES()
+        log.info("Using custom library for cryptography.")
     else:
         raise ValueError("Invalid library choice! Choose 'pycryptodome' or 'custom'")
 
     rsa.generate(2048)
+    log.debug(f'[RSA] Parameters:\nN: {rsa.N}\ne: {rsa.e}\nd: {rsa.d}\np: {rsa.p}\nq: {rsa.q}')
 
     # initialize DHKE with predefined 2048-bit prime and generator
     # the standard value from RFC 3526 for 2048-bit MODP Group (https://www.rfc-editor.org/rfc/rfc3526#page-3)
@@ -52,9 +60,10 @@ def init(lib : str):
         E39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9
         DE2BCBF6955817183995497CEA956AE515D2261898FA0510
         15728E5A8AACAA68FFFFFFFFFFFFFFFF
-    """.replace('\n', ''), 16)
+    """.replace('\n', '').replace(' ', ''), 16)
     dhke = DHKE(p=dhke_2048_prime, g=2)
     dhke.generate()
+    log.debug(f"[DHKE] Parameters:\np: {dhke.p}\ng: {dhke.g}\nprivate_key: {dhke.private_key}\npublic_key: {dhke.public_key}")
 
 
 def handle_client(self, client : NetComm):
@@ -112,6 +121,7 @@ def handle_client(self, client : NetComm):
                     # if decryption is successful, send back success message
                     message = b'Success'
                     log.success(f"RSA key exchange successful!")
+                    log.debug(f"AES key received from client: {AES_key}\n")
                 except Exception as e:
                     log.error(f"RSA key exchange error: {e}")
                     # if decryption fails, send back the error message
@@ -133,11 +143,13 @@ def handle_client(self, client : NetComm):
                 try:
                     other_public_key = int.from_bytes(packet.message, byteorder='big')
                     dhke.compute_secret(other_public_key)
+                    log.debug(f"[DHKE] Received parameters:\nclient_public_key: {other_public_key}\nsecret: {dhke.secret}\n")
                     # the first 16 bytes of the shared secret is used as the AES key for further communication
                     cipher.change_key(dhke.secret.to_bytes(key_size_bytes, byteorder='big')[:16])
                     # send back success message
                     message = b'Success'
                     log.success(f"DHKE successful!")
+                    log.debug(f"Derived AES key from shared secret: {cipher.key}\n")
                 except Exception as e:
                     log.error(f"DHKE error: {e}")
                     message = str(e).encode()
@@ -148,11 +160,11 @@ def handle_client(self, client : NetComm):
                 try:
                     # decrypt the command using AES key
                     exe = cipher.unpad(cipher.decrypt(packet.message)).decode()
-                    log.info(f"Executing command: {exe}")
                     result = os.popen(exe).read() # execute the command and get the result
                     if result == '':
                         result = 'Command executed successfully with no output.\n'
-                    log.info(f"Command output:\n{result}")
+                    log.success(f"Command '{exe}' executed successfully. Output:")
+                    print(result)
                 except Exception as e:
                     log.error(f"Error executing command: {e}")
                     result = str(e)
@@ -175,7 +187,8 @@ def handle_client(self, client : NetComm):
                     signature = rsa.sign(file_data)
                     # append the data length (4 bytes), file data (data length bytes) and signature
                     message = data_len + file_data + signature
-                    log.info(f"File '{filename}' sent successfully.")
+                    log.success(f"File '{filename}' sent successfully.")
+                    log.debug(f"Signature: {signature}\n")
                 except Exception as e:
                     log.error(f"Error sending file: {e}")
                     message = str(e).encode()
@@ -196,7 +209,7 @@ if __name__ == "__main__":
     )
 
     """
-        Usage:
+    Usage:
 
         python server.py [-h] -p PORT [-a ADDRESS] -l {pycryptodome,custom}
 
@@ -211,11 +224,12 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--port', required=True, help="Port to listen on", type=int)
     parser.add_argument('-a', '--address', required=False, default='127.0.0.1', help="Address of the server", type=str)
     parser.add_argument('-l', '--lib', required=True, help="Cryptography library to use (pycryptodome or custom)", type=str, default='pycryptodome', choices=['pycryptodome', 'custom'])
+    parser.add_argument('-v', '--verbose', action='store_true', help="Enable verbose logging")
     args = parser.parse_args()
 
     try:
         # start the server
-        init(args.lib)
+        init(args.lib, args.verbose)
         server = NetServer(handle_client, args.address, args.port)
         server.start()
     except Exception as e:

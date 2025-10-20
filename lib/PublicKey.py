@@ -7,9 +7,9 @@ from Crypto.Random import random as pycryptoRandom
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 
-#######################
-### Code form class ###
-#######################
+#------------------------------------------------------------#
+#-----[ Functions from CYBERUS Cryptology Lab 3 Part 1 ]-----#
+#------------------------------------------------------------#
 
 def prime_sieve(sieveSize):
     # Returns a list of prime numbers calculated using
@@ -88,11 +88,15 @@ def generate_large_prime(key_size=1024):
             # print('number of tries:', i)
             return num
 
-################
-### New code ###
-################
+#-------------------------------------------------------#
+#-----[ End of CYBERUS Cryptology Lab 3 functions ]-----#
+#-------------------------------------------------------#
     
+
 class RSA:
+    '''
+    Class to manage RSA based encryption, decryption and signatures.
+    '''
     def __init__(self):
         self.p = 0
         self.q = 0
@@ -103,24 +107,24 @@ class RSA:
         self.signer = None
         self.verifier = None
 
-    # code from class
+    # function from CYBERUS Cryptology Lab 3 Part 1
     def generate(self, key_size : int):
         self.key_size = key_size
 
         # Step 1: Create two prime numbers, p and q. Calculate n = p * q.
-        log.info('[RSA] Generating p & q primes...')
+        # log.debug('[RSA] Generating p & q primes...')
         self.p = generate_large_prime(key_size // 2)
         self.q = generate_large_prime(key_size // 2)
         self.N = self.p * self.q
 
         # Step 2: Create a number e that is relatively prime to (p-1)*(q-1):
-        log.info('[RSA] Generating e that is relatively prime to (p-1)*(q-1)...')
+        # log.debug('[RSA] Generating e that is relatively prime to (p-1)*(q-1)...')
 
         phi = (self.p-1)*(self.q-1)
         self.e = 65537
 
         # Step 3: Calculate d, the mod inverse of e:
-        log.info('[RSA] Calculating d that is mod inverse of e...')
+        # log.debug('[RSA] Calculating d that is mod inverse of e...')
         
         self.d = pow(self.e, -1, phi)
 
@@ -132,12 +136,24 @@ class RSA:
         return (publicKey, privateKey)
     
     def import_pub_key(self, pub_key : tuple):
+        '''
+        With this function we can import the public key shared by the peer and initializes the verifier.
+        '''
         self.N, self.e = pub_key
         self.key_size = self.N.bit_length()
         self.verifier = pkcs1_15.new(pycryptoRSA.construct(pub_key))
     
     # this is not a secure encryption since I do not use any padding
     def encrypt(self, message : bytes) -> bytes:
+        '''
+        RSA encryption WITHOUT padding.
+
+        Args:
+            message (bytes): the byte array that will be encrypted.
+
+        Returns:
+            The ciphertext as a byte array.
+        '''
         if self.N == 0 or self.e == 0:
             raise ValueError("[RSA] Public key not set!")
         
@@ -145,12 +161,20 @@ class RSA:
         if message_int.bit_length() > self.key_size:
             raise ValueError(f"[RSA] Message larger than {self.key_size} bits!")
         ciphertext_int = pow(message_int, self.e, self.N)
-        # byte_length = (ciphertext_int.bit_length() + 7) // 8
+
         return ciphertext_int.to_bytes(length=self.key_size, byteorder='big')
-        # return ciphertext_int.to_bytes(length=byte_length, byteorder='big')
     
     # does not consider any paddings
     def decrypt(self, ciphertext : bytes) -> bytes:
+        '''
+        RSA decryption WITHOUT padding.
+
+        Args:
+            ciphertext (bytes): the byte array to be decrypted
+
+        Returns:
+            The plaintext as a byte array.
+        '''
         if self.N == 0 or self.d == 0:
             raise ValueError("[RSA] Private key not set!")
         
@@ -158,11 +182,20 @@ class RSA:
         if ciphertext_int > self.N:
             raise ValueError(f"[RSA] Message larger than {self.key_size} bits!")
         message_int = pow(ciphertext_int, self.d, self.N)
-        # byte_length = (message_int.bit_length() + 7) // 8
+
         return message_int.to_bytes(length=self.key_size, byteorder='big')
-        # return message_int.to_bytes(length=byte_length, byteorder='big')
 
     def sign(self, message : bytes) -> bytes:
+        '''
+        Performs RSA signing using the private key. It hashes the message with sha256
+        and encrypts the hash.
+
+        Args:
+            message (bytes): the byte array which hash will be signed
+
+        Returns:
+            The signature of the message's hash as a byte array.
+        '''
         if self.signer is None:
             raise ValueError("[RSA] Private key not set!")
         
@@ -171,6 +204,17 @@ class RSA:
         return signature
     
     def verify(self, message : bytes, signature : bytes) -> bool:
+        '''
+        Performs RSA verification of a signed message using the public key. It hashes the
+        received message and decrypts the signature. If both outputs match the signature is valid.
+
+        Args:
+            message (bytes): the byte array to be verified.
+            signature (bytes): the signature of the message received from the peer.
+
+        Returns:
+            True/False depending if the verification was successful or not.
+        '''
         if self.verifier is None:
             raise ValueError("[RSA] Public key not set!")
         
@@ -181,6 +225,9 @@ class RSA:
         except (ValueError, TypeError):
             return False
 
+# the following class is just a wrapper for the pycryptodome RSA class
+# I made it only for ease of implementation since it respects the 
+# same function scheme as the previous class
 class libRSA:
     def __init__(self):
         self.rsa = None
@@ -195,11 +242,17 @@ class libRSA:
         self.verifier = None
 
     def init_values(self, public_key=False):
+        '''
+        Function to initialize the pycryptodome used within this class considering the class values.
+
+        Args:
+            public_key (bool): specifies if only the public key related structures should be initialized
+        '''
         self.e = self.rsa.e
         self.N = self.rsa.n
         self.verifier = pkcs1_15.new(pycryptoRSA.construct((self.N, self.e)))
 
-        if public_key:
+        if public_key: # if only public key -> only encryption and signature verification will be prossible
             self.cipher = PKCS1_OAEP.new(self.rsa.publickey())
             return
         
@@ -210,7 +263,6 @@ class libRSA:
         self.cipher = PKCS1_OAEP.new(self.rsa)
         self.key_size = self.rsa.size_in_bits()
 
-    # code from class
     def generate(self, key_size : int):
         self.rsa = pycryptoRSA.generate(key_size)
         self.init_values()
@@ -219,13 +271,11 @@ class libRSA:
         self.rsa = pycryptoRSA.construct(pub_key, consistency_check=True)
         self.init_values(public_key=True)
 
-    # this is not a secure encryption since I do not use any padding
     def encrypt(self, message : bytes) -> bytes:
         if self.rsa is None:
             raise ValueError("[libRSA] Public key not set!")
         return self.cipher.encrypt(message)
     
-    # does not consider any paddings
     def decrypt(self, ciphertext : bytes) -> bytes:
         if self.rsa is None:
             raise ValueError("[libRSA] Private key not set!")
@@ -252,6 +302,9 @@ class libRSA:
     
 
 class DHKE:
+    '''
+    Class to manage Diffie-Hellman Key Exchange.
+    '''
     def __init__(self, p=None, g=None):
         self.p = p
         self.g = g
@@ -261,12 +314,25 @@ class DHKE:
         self.key_size = 0 if p is None else p.bit_length()
 
     def generate(self):
+        '''
+        This function is meant to be called after the object initialization.
+        It will generate a random private key between (2, p - 2) and it will compute the public key associated.
+        '''
         if self.p is None or self.g is None:
             raise ValueError("p and g must be set before generating private key!")
         self.private_key = pycryptoRandom.StrongRandom().randint(2, self.p - 2)
         self.public_key = pow(self.g, self.private_key, self.p)
 
     def compute_secret(self, other_public_key : int):
+        '''
+        Computes the shared DHKE secret using the provided public key of the other party.
+
+        Args:
+            other_public_key (int): the public key of the peer
+
+        Returns:
+            The computed shared secret.
+        '''
         if self.public_key is None or self.private_key is None:
             raise ValueError("Public and private keys must be set before computing shared secret!")
         self.secret = pow(other_public_key, self.private_key, self.p)

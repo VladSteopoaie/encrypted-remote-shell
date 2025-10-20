@@ -2,7 +2,7 @@ from loguru import logger
 import sys
 
 logger.remove()
-logger.add(sys.stdout, colorize=True, format="<level>{level.icon}</level> <level>{message}</level>", level="DEBUG")
+logger.add(sys.stdout, colorize=True, format="<level>{level.icon}</level> <level>{message}</level>", level="INFO")
 
 
 logger.level(name='DEBUG', icon='[*]', color='<blue><bold>')

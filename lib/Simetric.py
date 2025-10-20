@@ -1,4 +1,7 @@
 class AES:
+    '''
+    Class for AES encryption and decryption in ECB mode.
+    '''
     def __init__(self, key : bytes = None):
         self.sbox = (
             0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -53,6 +56,11 @@ class AES:
         if key is not None:
             self.change_key(key)
 
+    #-----------------------------------------------------#
+    #-----[ Functions from CYBERUS Cryptology Lab 2 ]-----#
+    #-----------------------------------------------------#
+    
+    # helper functions
     def text2matrix(self, text : bytes) -> list:
         matrix = []
         for i in range(self.block_size):        
@@ -103,6 +111,7 @@ class AES:
             for j in range(4):
                 s[i][j] ^= k[i][j]
 
+    # function for encryption 
     def round_encrypt(self, state_matrix, key_matrix):
         self.sub_bytes(state_matrix)
         self.shift_rows(state_matrix)
@@ -133,6 +142,7 @@ class AES:
         for i in range(4):
             self. mix_single_column(s[i])  
 
+    # previously named encrypt
     def encrypt_block(self, plaintext : bytes) -> bytes:
         if self.round_keys is None:
             raise ValueError("[AES] Key not set!")
@@ -150,7 +160,7 @@ class AES:
 
         return self.matrix2text(plain_state)
 
-
+    # function for decryption
     def round_decrypt(self, state_matrix, key_matrix):
         self.add_round_key(state_matrix, key_matrix)       
         self.inv_mix_columns(state_matrix)
@@ -197,7 +207,21 @@ class AES:
 
         return self.matrix2text(cipher_state)
     
+    #-------------------------------------------------------#
+    #-----[ End of CYBERUS Cryptology Lab 2 functions ]-----#
+    #-------------------------------------------------------#
+
     def pad(self, text : bytes) -> bytes:
+        '''
+        Padding function to ensure that the length of the text is a multiple of the block_size.
+        Note: The padding scheme is the default padding scheme used in pycryptodome.
+
+        Args:
+            text (bytes): the byte array to be padded
+
+        Returns:
+            text + padding
+        '''
         padding_len = self.block_size - (len(text) % self.block_size)
         if padding_len == 0:
             padding_len = self.block_size
@@ -205,6 +229,16 @@ class AES:
         return text + padding
     
     def unpad(self, padded_text : bytes) -> bytes:
+        '''
+        Unpadding function to revert the changes made by pad().
+        Note: The padding scheme is the default padding scheme used in pycryptodome.
+
+        Args:
+            padded_text (bytes): the byte array to be unpadded
+
+        Returns:
+            padded_text - padding
+        '''
         padding_len = padded_text[-1]
         if padding_len < 1 or padding_len > self.block_size:
             raise ValueError("[AES] Invalid padding length!")
@@ -214,7 +248,15 @@ class AES:
         return padded_text[:-padding_len]
     
     def encrypt(self, plaintext : bytes) -> bytes:
-        # encrypts data in ECB mode
+        '''
+        Encryption function that encrypts a byte array in ECB mode.
+
+        Args:
+            plaintext (bytes): the byte array to be encrypted
+
+        Retruns:
+            The ciphertext.
+        '''
         if self.key is None:
             raise ValueError("[AES] Key not set!")
         
@@ -229,7 +271,15 @@ class AES:
         return ciphertext
     
     def decrypt(self, ciphertext : bytes) -> bytes:
-        # decrypts data in ECB mode
+        '''
+        Decryption function that decrypts a byte array in ECB mode.
+
+        Args:
+            ciphertext (bytes): the byte array to be dencrypted
+
+        Retruns:
+            The plaintext.
+        '''
         if self.key is None:
             raise ValueError("[AES] Key not set!")
         
@@ -242,10 +292,14 @@ class AES:
             plaintext += self.decrypt_block(block) 
         
         return plaintext
-    
+
+
+# the following class is just a wrapper for the pycryptodome AES class
+# I made it only for ease of implementation since it respects the 
+# same function scheme as the previous class
+
 from Crypto.Cipher import AES as pycryptoAES
 from Crypto.Util.Padding import pad, unpad
-
 class libAES:
     def __init__(self):
         self.key = None

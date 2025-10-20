@@ -54,7 +54,8 @@ def get_RSA_public_key(client : NetClient):
     N = int.from_bytes(data[4 : 4 + key_size // 8], byteorder='big') # next key_size // 8 bytes represent N
     e = int.from_bytes(data[4 + key_size // 8 : ], byteorder='big') # the rest of the bytes represent e
     rsa.import_pub_key((N, e))
-    log.info(f"Received public key (size={key_size}):\nN={N}\ne={e}\n")
+    log.success("Retrieved RSA public key from server.")
+    log.debug(f"Received public key (size: {key_size}):\nN: {N}\ne: {e}\n")
 
 def perform_RSA_key_exchange(client : NetClient):
     """
@@ -81,6 +82,7 @@ def perform_RSA_key_exchange(client : NetClient):
         
         # if we reach here, the key exchange was successful
         log.success("RSA key exchange successful!")
+        log.debug(f"AES key sent to server: {cipher.key}\n")
     except Exception as e:
         raise e
 
@@ -117,6 +119,7 @@ def perform_DHKE(client : NetClient):
 
         # compute shared secret with the server's public key
         dhke.compute_secret(server_public_key)
+        log.debug(f"DHKE parameters (size: {key_size}):\np: {p}\ng: {g}\nserver_public_key: {server_public_key}\nclient_public_key: {dhke.public_key}\nsecret: {dhke.secret}\n")
 
         # send our public key to the server
         enc_message = dhke.public_key.to_bytes(key_size_bytes, byteorder='big')
@@ -128,6 +131,7 @@ def perform_DHKE(client : NetClient):
         aes_key = dhke.secret.to_bytes(key_size_bytes, byteorder='big')[:16]
         cipher.change_key(aes_key)
         log.success("DHKE successful!")
+        log.debug(f"Derived AES key from shared secret: {aes_key}\n")
     except Exception as e:
         log.error(f"DHKE failed: {str(e)}")
         raise e
@@ -154,8 +158,14 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--port', required=True, help="Port to connect to", type=int)
     parser.add_argument('-a', '--address', required=True, help="Address of the server", type=str)
     parser.add_argument('-e', '--exchange', required=True, help="Key exchange algorithm to be used", type=str, default='DHKE', choices=['DHKE', 'RSA'])
+    parser.add_argument('-v', '--verbose', action='store_true', help="Enable verbose logging")
     args = parser.parse_args()
     
+    if args.verbose:
+        log.remove()
+        log.add(sys.stdout, colorize=True, format="<level>{level.icon}</level> <level>{message}</level>", level="DEBUG")
+
+
     client = NetClient(args.address, args.port)
     try:
         # starting connection
@@ -186,7 +196,7 @@ if __name__ == "__main__":
 
                 # if we performed DHKE, we need to get the RSA public key for signature verification
                 if rsa.N == 0 or rsa.e == 0:
-                    get_RSA_public_key()
+                    get_RSA_public_key(client)
 
                 # send the encrypted filename to the server
                 enc_filename = cipher.encrypt(cipher.pad(filename.encode()))
@@ -198,7 +208,7 @@ if __name__ == "__main__":
                 data_len = int.from_bytes(data[:4], byteorder='big') # first 4 bytes represent the length of the file data
                 file_data = data[4: 4 + data_len] # next data_len bytes represent the file data
                 signature = data[4 + data_len : ] # the rest of the bytes represent the signature
-
+                log.debug(f"Received signature: {signature}\n")
                 # verify the signature
                 if not rsa.verify(file_data, signature):
                     log.error("Signature verification failed! The file may be tampered with.")
