@@ -113,7 +113,7 @@ def perform_DHKE(client : NetClient):
         g = int.from_bytes(data[4 + key_size_bytes : 4 + 2 * key_size_bytes], byteorder='big') # the next key_size // 8 bytes represent g
         server_public_key = int.from_bytes(data[4 + 2 * key_size_bytes : ], byteorder='big') # the rest of the bytes represent the public key of the server
         
-        # instanciate DHKE and generate keys
+        # instantiate DHKE and generate keys
         dhke = DHKE(p, g)
         dhke.generate()
 

@@ -253,7 +253,7 @@ class libRSA:
         self.N = self.rsa.n
         self.verifier = pkcs1_15.new(pycryptoRSA.construct((self.N, self.e)))
 
-        if public_key: # if only public key -> only encryption and signature verification will be prossible
+        if public_key: # if only public key -> only encryption and signature verification will be possible
             self.cipher = PKCS1_OAEP.new(self.rsa.publickey())
             return
         

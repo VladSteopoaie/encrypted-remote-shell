@@ -85,7 +85,7 @@ class AES:
             self.change_key(key)
 
     #-------------------------------#
-    #-----[ Borrwed functions ]-----#
+    #-----[ Borrowed functions ]-----#
     #-------------------------------#
     
     # helper functions
@@ -283,7 +283,7 @@ class AES:
         Args:
             plaintext (bytes): the byte array to be encrypted
 
-        Retruns:
+        Returns:
             The ciphertext.
         '''
         if self.key is None:
@@ -304,9 +304,9 @@ class AES:
         Decryption function that decrypts a byte array in ECB mode.
 
         Args:
-            ciphertext (bytes): the byte array to be dencrypted
+            ciphertext (bytes): the byte array to be decrypted
 
-        Retruns:
+        Returns:
             The plaintext.
         '''
         if self.key is None:

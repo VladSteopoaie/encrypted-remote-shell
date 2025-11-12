@@ -101,7 +101,7 @@ This is a class designed to abstract the network communication with sockets. Com
 
 **NetServer Class:**
 
-This class implements most of the generic netwrok features a server would need. It binds to a port, then starts listening for and accepting client connections (uses the methods `start()` and `accept_clients()`).
+This class implements most of the generic network features a server would need. It binds to a port, then starts listening for and accepting client connections (uses the methods `start()` and `accept_clients()`).
 
 For each accepted client it creates a `NetComm` object and creates a thread that will handle the client connection using `handle_connection()`.
 
