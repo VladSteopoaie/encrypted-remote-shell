@@ -77,6 +77,7 @@ class NetComm:
         except Exception as e:
             log.error(f"[NetComm] Error: {e}")
             return None
+
 class NetServer:
     '''
     Class for a TCP server that handles multiple clients.
@@ -94,7 +95,7 @@ class NetServer:
         '''
         try:
             # set up signal handler for graceful shutdown on Ctrl+C
-            signal.signal(signal.SIGINT, self._handle_sigint)
+            signal.signal(signal.SIGINT, self.handle_sigint)
 
             # bind and listen
             self.comm.sock.bind((self.comm.host, self.comm.port))
@@ -171,7 +172,7 @@ class NetServer:
                 log.error(f"[NetServer] stop (client): {e}")
         self.clients.clear()
 
-    def _handle_sigint(self, signum, frame):
+    def handle_sigint(self, signum, frame):
         '''
         Signal handler for Ctrl+C (SIGINT).
         '''

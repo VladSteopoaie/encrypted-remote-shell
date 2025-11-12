@@ -8,7 +8,7 @@ if ROOT not in sys.path:
 from Crypto.Random import get_random_bytes
 from lib.Communication import * # for NetComm, Packet, Command
 from lib.PublicKey import * # for RSA, libRSA, DHKE
-from lib.Simetric import * # for AES, libAES
+from lib.Symmetric import * # for AES, libAES
 from lib.Logger import logger as log
 
 # global variables
@@ -161,10 +161,10 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbose', action='store_true', help="Enable verbose logging")
     args = parser.parse_args()
     
+    # set the logging level
     if args.verbose:
         log.remove()
         log.add(sys.stdout, colorize=True, format="<level>{level.icon}</level> <level>{message}</level>", level="DEBUG")
-
 
     client = NetClient(args.address, args.port)
     try:

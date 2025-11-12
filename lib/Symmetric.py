@@ -1,3 +1,31 @@
+"""
+    A part from the code was borrowed and adapted from:
+
+
+    Copyright (C) 2012 Bo Zhu http://about.bozhu.me
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+
+    
+    Modified by Steopoaie Vlad, 2025
+"""
+
 class AES:
     '''
     Class for AES encryption and decryption in ECB mode.
@@ -56,9 +84,9 @@ class AES:
         if key is not None:
             self.change_key(key)
 
-    #-----------------------------------------------------#
-    #-----[ Functions from CYBERUS Cryptology Lab 2 ]-----#
-    #-----------------------------------------------------#
+    #-------------------------------#
+    #-----[ Borrwed functions ]-----#
+    #-------------------------------#
     
     # helper functions
     def text2matrix(self, text : bytes) -> list:
@@ -190,6 +218,7 @@ class AES:
 
         self.mix_columns(s)
 
+    # previously named decrypt
     def decrypt_block(self, ciphertext):
         if self.round_keys is None:
             raise ValueError("[AES] Key not set!")
@@ -207,9 +236,9 @@ class AES:
 
         return self.matrix2text(cipher_state)
     
-    #-------------------------------------------------------#
-    #-----[ End of CYBERUS Cryptology Lab 2 functions ]-----#
-    #-------------------------------------------------------#
+    #---------------------------------------#
+    #-----[ End of borrowed functions ]-----#
+    #---------------------------------------#
 
     def pad(self, text : bytes) -> bytes:
         '''

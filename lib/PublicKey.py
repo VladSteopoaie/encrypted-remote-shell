@@ -7,9 +7,15 @@ from Crypto.Random import random as pycryptoRandom
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256
 
-#------------------------------------------------------------#
-#-----[ Functions from CYBERUS Cryptology Lab 3 Part 1 ]-----#
-#------------------------------------------------------------#
+'''
+This file contains code from:
+
+**Cracking Codes with Python - An Introduction to Building and Breaking Ciphers** by Al Sweigart
+January 2018, 416 pp.
+ISBN-13:9781593278229
+
+All codes (BSD Licensed) are available at https://nostarch.com/crackingcodes
+'''
 
 def prime_sieve(sieveSize):
     # Returns a list of prime numbers calculated using
@@ -88,11 +94,6 @@ def generate_large_prime(key_size=1024):
             # print('number of tries:', i)
             return num
 
-#-------------------------------------------------------#
-#-----[ End of CYBERUS Cryptology Lab 3 functions ]-----#
-#-------------------------------------------------------#
-    
-
 class RSA:
     '''
     Class to manage RSA based encryption, decryption and signatures.
@@ -107,7 +108,7 @@ class RSA:
         self.signer = None
         self.verifier = None
 
-    # function from CYBERUS Cryptology Lab 3 Part 1
+    # function from the book
     def generate(self, key_size : int):
         self.key_size = key_size
 

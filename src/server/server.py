@@ -8,7 +8,7 @@ if ROOT not in sys.path:
 
 from lib.Communication import * # for NetComm, Packet, Command
 from lib.PublicKey import * # for RSA, libRSA, DHKE
-from lib.Simetric import * # for AES, libAES
+from lib.Symmetric import * # for AES, libAES
 from lib.Logger import logger as log
 
 # global variables
@@ -23,6 +23,7 @@ def init(lib : str, verbose: bool = False):
 
     Args:
         lib (str): The cryptography library to use ('pycryptodome' or 'custom').
+        verbose (bool): If True the DEBUG messages will be printed in the console as well.
     """
     global rsa, cipher, dhke
     
@@ -47,7 +48,7 @@ def init(lib : str, verbose: bool = False):
     log.debug(f'[RSA] Parameters:\nN: {rsa.N}\ne: {rsa.e}\nd: {rsa.d}\np: {rsa.p}\nq: {rsa.q}')
 
     # initialize DHKE with predefined 2048-bit prime and generator
-    # the standard value from RFC 3526 for 2048-bit MODP Group (https://www.rfc-editor.org/rfc/rfc3526#page-3)
+    # standard values from RFC 3526 for 2048-bit MODP Group (https://www.rfc-editor.org/rfc/rfc3526#page-3)
     dhke_2048_prime = int("""
         FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1
         29024E088A67CC74020BBEA63B139B22514A08798E3404DD
@@ -81,7 +82,7 @@ def handle_client(self, client : NetComm):
     - FILE: Transfer a file to the client (the server also signs the file with it's RSA private key).
 
     Args:
-        self (NetServer): The NetServer instance (the function will be passed as a parameter).
+        self (NetServer): The NetServer instance (this function will be passed as a parameter to a NetServer instance).
         client (NetComm): The connected client communication object. 
     """
     global rsa, cipher, dhke
